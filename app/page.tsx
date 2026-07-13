@@ -274,10 +274,12 @@ export default function Home() {
 
 	const liveRawText = useLiveTranscript(status === "recording");
 	const lastSentRef = useRef(0);
+	const notesRef = useRef<string[]>([]);
 
 	useEffect(() => {
 		if (status !== "recording") {
 			setLiveNotes([]);
+			notesRef.current = [];
 			lastSentRef.current = 0;
 			return;
 		}
@@ -296,7 +298,7 @@ export default function Home() {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
-						previousNotes: liveNotes,
+						previousNotes: notesRef.current,
 						newText,
 					}),
 				});
@@ -305,6 +307,7 @@ export default function Home() {
 
 				const payload = (await response.json()) as { notes?: string[] };
 				if (payload.notes) {
+					notesRef.current = payload.notes;
 					setLiveNotes(payload.notes);
 				}
 			} catch {
