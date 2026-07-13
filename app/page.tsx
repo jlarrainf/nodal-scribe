@@ -271,7 +271,7 @@ export default function Home() {
 		}
 	};
 
-	const liveTranscript = useLiveTranscript(status === "recording");
+	const { notes: liveNotes, interim: liveInterim } = useLiveTranscript(status === "recording");
 
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
@@ -350,8 +350,6 @@ export default function Home() {
 							</div>
 						</div>
 
-						<LiveTelemetry text={liveTranscript} isActive={status === "recording"} />
-
 						<details className="group rounded-3xl border border-dashed border-black/15 bg-white/55 p-4 shadow-sm transition hover:bg-white/70">
 							<summary className="cursor-pointer list-none text-sm font-semibold text-forest outline-none">
 								<span className="inline-flex items-center gap-2">
@@ -396,6 +394,8 @@ export default function Home() {
 				</div>
 
 				<div className="grid gap-4">
+					<LiveTelemetry notes={liveNotes} interim={liveInterim} isActive={status === "recording"} />
+
 					<StatusBanner
 						title={
 							status === "error" ? "Se produjo un problema"

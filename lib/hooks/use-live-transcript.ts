@@ -12,8 +12,16 @@ function getSpeechRecognition(): unknown {
 	return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export function useLiveTranscript(enabled: boolean): string {
-	const [transcript, setTranscript] = useState("");
+export type LiveTranscriptState = {
+	notes: string[];
+	interim: string;
+};
+
+export function useLiveTranscript(enabled: boolean): LiveTranscriptState {
+	const [state, setState] = useState<LiveTranscriptState>({
+		notes: [],
+		interim: "",
+	});
 	const recognitionRef = useRef<unknown>(null);
 	const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -26,17 +34,26 @@ export function useLiveTranscript(enabled: boolean): string {
 				clearTimeout(restartTimeoutRef.current);
 				restartTimeoutRef.current = null;
 			}
-			setTranscript("");
+			setState({ notes: [], interim: "" });
 			return;
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const RecognitionCtor = getSpeechRecognition() as { new (): AnyObj } | null;
-		if (!RecognitionCtor) return;
+		if (!RecognitionCtor) {
+			setState({
+				notes: [],
+				interim:
+					"[Web Speech API no disponible. Usa Chrome o Edge.]",
+			});
+			return;
+		}
 
-		let finalTranscript = "";
+		const notesAccum: string[] = [];
+		let restarting = false;
 
 		const startRecognition = () => {
+			restarting = false;
 			const recognition: AnyObj = new RecognitionCtor();
 			recognition.continuous = true;
 			recognition.interimResults = true;
@@ -51,35 +68,50 @@ export function useLiveTranscript(enabled: boolean): string {
 				for (let i = resultIndex; i < results.length; i++) {
 					const result = results[i];
 					if (result.isFinal) {
-						finalTranscript += " " + (result[0]?.transcript ?? "");
+						const text = (result[0]?.transcript ?? "").trim();
+						if (text) {
+							notesAccum.push(text.charAt(0).toUpperCase() + text.slice(1));
+						}
 					} else {
 						interim += result[0]?.transcript ?? "";
 					}
 				}
 
-				setTranscript((finalTranscript + " " + interim).trim());
+				setState({
+					notes: [...notesAccum],
+					interim: interim.trim(),
+				});
 			};
 
-			recognition.onerror = () => {
+			recognition.onerror = (e: AnyObj) => {
+				const errMsg = e?.error ?? "unknown";
 				recognition.stop?.();
 				recognitionRef.current = null;
-				restartTimeoutRef.current = setTimeout(startRecognition, 500);
+				if (!restarting && errMsg !== "aborted") {
+					restarting = true;
+					restartTimeoutRef.current = setTimeout(startRecognition, 1000);
+				}
 			};
 
 			recognition.onend = () => {
 				recognitionRef.current = null;
-				if (enabled) {
-					restartTimeoutRef.current = setTimeout(startRecognition, 300);
+				if (enabled && !restarting) {
+					restartTimeoutRef.current = setTimeout(startRecognition, 500);
 				}
 			};
 
 			recognitionRef.current = recognition;
-			recognition.start?.();
+			try {
+				recognition.start();
+			} catch {
+				recognitionRef.current = null;
+			}
 		};
 
 		startRecognition();
 
 		return () => {
+			restarting = true;
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(recognitionRef.current as any)?.stop?.();
 			recognitionRef.current = null;
@@ -90,5 +122,5 @@ export function useLiveTranscript(enabled: boolean): string {
 		};
 	}, [enabled]);
 
-	return transcript;
+	return state;
 }

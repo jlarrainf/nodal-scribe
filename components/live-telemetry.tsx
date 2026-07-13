@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import { highlightEntities } from "@/lib/utils/highlight-entities";
 import type { HighlightKind } from "@/lib/utils/highlight-entities";
+import type { LiveTranscriptState } from "@/lib/hooks/use-live-transcript";
 
-type LiveTelemetryProps = {
-	text: string;
+type LiveTelemetryProps = LiveTranscriptState & {
 	isActive: boolean;
 };
 
@@ -30,61 +30,65 @@ function HighlightedText({ text }: { text: string }) {
 	);
 }
 
-const PLACEHOLDER_LINES = [
-	" ",
-	" ",
-	" ",
-	" ",
-	" ",
-	" ",
-];
-
-export function LiveTelemetry({ text, isActive }: LiveTelemetryProps) {
+export function LiveTelemetry({
+	notes,
+	interim,
+	isActive,
+}: LiveTelemetryProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [text]);
+	}, [notes, interim]);
 
 	if (!isActive) {
 		return null;
 	}
-
-	const displayLines =
-		text.trim() ?
-			text.split(/\n/).filter(Boolean)
-		:	PLACEHOLDER_LINES;
 
 	return (
 		<div className="rounded-3xl border border-black/10 bg-white/80 p-4 shadow-soft">
 			<div className="mb-2 flex items-center gap-2">
 				<span className="inline-flex h-2 w-2 rounded-full bg-red-500" />
 				<span className="text-xs font-semibold uppercase tracking-[0.18em] text-ink/60">
-					Escucha activa
+					Apuntes de consulta
 				</span>
+				{notes.length > 0 && (
+					<span className="ml-auto text-[11px] text-ink/40">
+						{notes.length} apunte{notes.length !== 1 ? "s" : ""}
+					</span>
+				)}
 			</div>
 
 			<div
 				ref={scrollRef}
-				className="max-h-48 min-h-[7.5rem] overflow-y-auto rounded-2xl border border-black/5 bg-paper/60 px-4 py-3 text-sm leading-relaxed"
+				className="max-h-48 min-h-[5rem] overflow-y-auto rounded-2xl border border-black/5 bg-paper/60 px-4 py-3 text-sm leading-relaxed"
 			>
-				{text.trim() ?
-					displayLines.map((line, i) => (
-						<p key={i} className="mb-1 last:mb-0">
-							<HighlightedText text={line} />
-						</p>
-					))
-				:	<p className="text-center text-xs text-ink/40">
+				{notes.length === 0 && !interim ?
+					<p className="text-center text-xs text-ink/40">
 						Esperando entrada de voz...
 					</p>
+				:	<ul className="space-y-1.5">
+						{notes.map((note, i) => (
+							<li key={i} className="flex gap-2">
+								<span className="mt-0.5 shrink-0 text-forest/60">&#8226;</span>
+								<span>
+									<HighlightedText text={note} />
+								</span>
+							</li>
+						))}
+						{interim && (
+							<li className="flex gap-2 opacity-60">
+								<span className="mt-0.5 shrink-0 text-forest/60">&#8226;</span>
+								<span>
+									<HighlightedText text={interim} />
+									<span className="ml-1 inline-block h-4 w-0.5 animate-pulse bg-ink/40" />
+								</span>
+							</li>
+						)}
+					</ul>
 				}
-			</div>
-
-			<div className="mt-2 flex items-center gap-1.5">
-				<span className="inline-flex h-2 w-2 rounded-full bg-red-500" />
-				<span className="text-[11px] text-ink/40">grabando</span>
 			</div>
 		</div>
 	);
