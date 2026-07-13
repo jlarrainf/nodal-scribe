@@ -24,6 +24,8 @@ import {
 	noteToClipboardText,
 } from "@/lib/utils/clinical-note";
 import { formatError } from "@/lib/utils/format-error";
+import { useLiveTranscript } from "@/lib/hooks/use-live-transcript";
+import { LiveTelemetry } from "@/components/live-telemetry";
 
 type AppStatus = "idle" | "recording" | "processing" | "success" | "error";
 
@@ -269,6 +271,8 @@ export default function Home() {
 		}
 	};
 
+	const liveTranscript = useLiveTranscript(status === "recording");
+
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
 			<section className="grid flex-1 gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -345,6 +349,8 @@ export default function Home() {
 								}
 							</div>
 						</div>
+
+						<LiveTelemetry text={liveTranscript} isActive={status === "recording"} />
 
 						<details className="group rounded-3xl border border-dashed border-black/15 bg-white/55 p-4 shadow-sm transition hover:bg-white/70">
 							<summary className="cursor-pointer list-none text-sm font-semibold text-forest outline-none">
