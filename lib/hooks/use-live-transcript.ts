@@ -12,16 +12,8 @@ function getSpeechRecognition(): unknown {
 	return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export type LiveTranscriptState = {
-	notes: string[];
-	interim: string;
-};
-
-export function useLiveTranscript(enabled: boolean): LiveTranscriptState {
-	const [state, setState] = useState<LiveTranscriptState>({
-		notes: [],
-		interim: "",
-	});
+export function useLiveTranscript(enabled: boolean): string {
+	const [rawText, setRawText] = useState("");
 	const recognitionRef = useRef<unknown>(null);
 	const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,22 +26,20 @@ export function useLiveTranscript(enabled: boolean): LiveTranscriptState {
 				clearTimeout(restartTimeoutRef.current);
 				restartTimeoutRef.current = null;
 			}
-			setState({ notes: [], interim: "" });
+			setRawText("");
 			return;
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const RecognitionCtor = getSpeechRecognition() as { new (): AnyObj } | null;
 		if (!RecognitionCtor) {
-			setState({
-				notes: [],
-				interim:
-					"[Web Speech API no disponible. Usa Chrome o Edge.]",
-			});
+			setRawText(
+				"[Web Speech API no disponible. Usa Chrome o Edge.]",
+			);
 			return;
 		}
 
-		const notesAccum: string[] = [];
+		let accumulated = "";
 		let restarting = false;
 
 		const startRecognition = () => {
@@ -63,24 +53,18 @@ export function useLiveTranscript(enabled: boolean): LiveTranscriptState {
 			recognition.onresult = (event: AnyObj) => {
 				const resultIndex = event.resultIndex as number;
 				const results = event.results as AnyObj[];
-				let interim = "";
 
 				for (let i = resultIndex; i < results.length; i++) {
 					const result = results[i];
 					if (result.isFinal) {
 						const text = (result[0]?.transcript ?? "").trim();
 						if (text) {
-							notesAccum.push(text.charAt(0).toUpperCase() + text.slice(1));
+							accumulated += " " + text.charAt(0).toUpperCase() + text.slice(1);
 						}
-					} else {
-						interim += result[0]?.transcript ?? "";
 					}
 				}
 
-				setState({
-					notes: [...notesAccum],
-					interim: interim.trim(),
-				});
+				setRawText(accumulated.trim());
 			};
 
 			recognition.onerror = (e: AnyObj) => {
@@ -122,5 +106,5 @@ export function useLiveTranscript(enabled: boolean): LiveTranscriptState {
 		};
 	}, [enabled]);
 
-	return state;
+	return rawText;
 }

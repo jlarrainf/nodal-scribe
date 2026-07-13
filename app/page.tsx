@@ -44,6 +44,7 @@ export default function Home() {
 	const [hasDraft, setHasDraft] = useState(false);
 	const [testingText, setTestingText] = useState("");
 	const [testingOpen, setTestingOpen] = useState(false);
+	const [liveNotes, setLiveNotes] = useState<string[]>([]);
 	const specialty = getSpecialtyDefinition(specialtyTemplate);
 
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -271,7 +272,48 @@ export default function Home() {
 		}
 	};
 
-	const { notes: liveNotes, interim: liveInterim } = useLiveTranscript(status === "recording");
+	const liveRawText = useLiveTranscript(status === "recording");
+	const lastSentRef = useRef(0);
+
+	useEffect(() => {
+		if (status !== "recording") {
+			setLiveNotes([]);
+			lastSentRef.current = 0;
+			return;
+		}
+
+		const interval = setInterval(async () => {
+			const currentText = liveRawText;
+			const prevLength = lastSentRef.current;
+
+			if (currentText.length <= prevLength) return;
+
+			const newText = currentText.slice(prevLength);
+			lastSentRef.current = currentText.length;
+
+			try {
+				const response = await fetch("/api/process-live-note", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						previousNotes: liveNotes,
+						newText,
+					}),
+				});
+
+				if (!response.ok) return;
+
+				const payload = (await response.json()) as { notes?: string[] };
+				if (payload.notes) {
+					setLiveNotes(payload.notes);
+				}
+			} catch {
+				// silencioso — no interrumpir la grabación
+			}
+		}, 60_000);
+
+		return () => clearInterval(interval);
+	}, [status, liveRawText]);
 
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
@@ -394,7 +436,7 @@ export default function Home() {
 				</div>
 
 				<div className="grid gap-4">
-					<LiveTelemetry notes={liveNotes} interim={liveInterim} isActive={status === "recording"} />
+					<LiveTelemetry notes={liveNotes} interim={liveRawText} isActive={status === "recording"} />
 
 					<StatusBanner
 						title={
