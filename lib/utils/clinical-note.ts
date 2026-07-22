@@ -17,11 +17,10 @@ function createEmptyValue(field: SpecialtyField): unknown {
 }
 
 export function createEmptyClinicalNote(
-	specialtyTemplate?: string | null,
+	fields: ReadonlyArray<SpecialtyField>,
 ): ClinicalNoteDocument {
-	const specialty = getSpecialtyDefinition(specialtyTemplate);
 	return Object.fromEntries(
-		specialty.fields.map((field) => [field.key, createEmptyValue(field)]),
+		fields.map((field) => [field.key, createEmptyValue(field)]),
 	);
 }
 
@@ -54,12 +53,6 @@ function formatValue(label: string, value: unknown): string {
 	return `${label}\n${value ? String(value) : "-"}`;
 }
 
-function capitalizeLabel(value: string) {
-	return value
-		.replaceAll("_", " ")
-		.replace(/\b\p{L}/gu, (match) => match.toUpperCase());
-}
-
 function renderFields(
 	fields: ReadonlyArray<SpecialtyField>,
 	note: ClinicalNoteDocument,
@@ -79,15 +72,14 @@ function renderFields(
 
 export function noteToClipboardText(
 	note: ClinicalNoteDocument,
-	specialtyTemplate?: string | null,
+	fields: ReadonlyArray<SpecialtyField>,
 ): string {
-	const specialty = getSpecialtyDefinition(specialtyTemplate);
-	return renderFields(specialty.fields, note).join("\n\n");
+	return renderFields(fields, note).join("\n\n");
 }
 
 export function getSpecialtyPreviewLines(
 	specialtyTemplate?: string | null,
 ): string[] {
 	const specialty = getSpecialtyDefinition(specialtyTemplate);
-	return specialty.fields.map((field) => capitalizeLabel(field.label));
+	return specialty.fields.map((field) => field.label);
 }

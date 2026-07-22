@@ -74,6 +74,9 @@ El código del backend usará el SDK estándar de OpenAI, lo que permite cambiar
 ### D. Autenticación y Autorización
 7.  **JSON Web Tokens (JWT) / OAuth 2.0:** Integración de Auth (ej. Supabase Auth, Clerk) para generar tokens JWT encriptados.
 
+### E. Capa de Captura (Cliente)
+8.  **Sin APIs de reconocimiento de voz del navegador:** Queda prohibido usar `SpeechRecognition`/`webkitSpeechRecognition` (Web Speech API). Esas APIs envían el audio a servidores de terceros (ej. Google) fuera de nuestro control y sin garantías de retención cero. Toda transcripción —incluidas las notas en vivo— debe pasar por el mismo pipeline ASR contratado (Groq en el PoC, Azure en producción).
+
 ---
 
 ## 5. Guía de Implementación del Prototipo (PoC) con OpenRouter
@@ -130,3 +133,58 @@ ASR_MODEL_NAME="whisper"
 ```
 
 Ventaja de este enfoque: Al gestionar la arquitectura a través de variables de entorno administradas en la nube, evitas por completo reescribir funciones, permitiendo que tu prototipo sea idéntico en comportamiento a tu producto de grado médico.
+
+---
+
+## 6. Notas en Vivo (Live Notes)
+
+### 6.1. Objetivo
+Mostrar al médico, durante la consulta y en formato Markdown renderizado, los puntos relevantes de la conversación en curso (signos vitales, medicamentos, alergias, acuerdos, etc.), de modo que no deba esperar al final para revisar lo importante.
+
+### 6.2. Diseño del Prototipo (PoC)
+El flujo reutiliza la misma infraestructura efímera que la nota final, sin agregar almacenamiento:
+
+1.  **Captura por segmentos:** Mientras `MediaRecorder` acumula los chunks de audio de la grabación completa, el frontend arma periódicamente un segmento con los chunks nuevos (anteponiendo el primer chunk, que contiene la cabecera del contenedor, para que el segmento sea decodificable). Primera actualización ≈ 12 s; luego cada ≈ 30 s.
+2.  **Endpoint autenticado:** `POST /api/process-live-note` exige sesión válida (misma autenticación que el resto de la API). Recibe el segmento de audio y las notas previas en Markdown.
+3.  **Transcripción efímera:** El segmento se transcribe con el mismo cliente ASR (Groq en PoC, Azure en producción). El audio se procesa en memoria y se descarta; nunca se persiste.
+4.  **Extracción y fusión:** El LLM integra la nueva transcripción con las notas previas y devuelve Markdown actualizado, enfocándose en la preferencia `live_note_focus` del usuario (leída del perfil en el servidor; si está vacía, se usa un enfoque clínico por defecto). Regla de cero invención.
+5.  **Cursor con reintento:** El cliente solo avanza su cursor de audio cuando el servidor confirma una transcripción exitosa (`transcribed: true`). Si un segmento falla, no se avanza y se reintenta con más audio en el siguiente ciclo (autocuración).
+6.  **Render seguro:** El Markdown se renderiza con un parser propio que genera elementos de React (sin `dangerouslySetInnerHTML` y sin dependencias externas), evitando inyección de HTML.
+
+### 6.3. Garantías de Privacidad (estado actual)
+-   **Sin Web Speech API:** se eliminó el uso de `webkitSpeechRecognition`, que filtraba audio a servidores de terceros. Todo audio pasa por el pipeline ASR controlado.
+-   **Endpoint autenticado:** dejó de ser público; ahora requiere sesión.
+-   **Retención cero:** ni el audio ni las notas en vivo se guardan en servidor ni en base de datos. Las notas viven únicamente en memoria del cliente (estado de React) y se limpian al detener la grabación.
+-   **Único dato persistido:** `live_note_focus` (una preferencia de texto, no dato clínico), aislada por usuario mediante RLS en `public.profiles`.
+
+### 6.4. Endurecimiento para Producción (Roadmap)
+Para alinear las notas en vivo con el estándar HIPAA / Ley 20.584 del resto del sistema:
+
+1.  **ASR en streaming (SSE):** reemplazar el envío periódico de segmentos por transcripción en streaming con Server-Sent Events sobre el proveedor seguro (Azure), reduciendo latencia y tamaño de payload.
+2.  **Segmentación con URLs firmadas:** subir chunks a un bucket con URLs prefirmadas de vida corta y borrado automático, en lugar de reenviar blobs crecientes.
+3.  **TLS 1.3 + rate limiting:** forzar TLS 1.3 y limitar la frecuencia del endpoint en vivo para evitar abuso.
+4.  **VAD / gating por voz:** detectar actividad de voz en el cliente para no transmitir silencios.
+5.  **Auditoría sin contenido:** registrar metadatos de uso (nunca el contenido clínico) para trazabilidad.
+6.  **BAA / ZDR:** todo el procesamiento bajo el contrato corporativo con retención cero, igual que la transcripción final.
+
+---
+
+## 7. Plantillas Personalizadas (por usuario)
+
+### 7.1. Objetivo
+Permitir que cada médico derive una plantilla propia a partir de una base y ajuste su estructura (agregar/quitar/renombrar/reordenar campos de tipo texto, lista o grupo), sin modificar nunca la plantilla base original.
+
+### 7.2. Modelo de datos
+-   Tabla `public.custom_specialties` (`id`, `user_id`, `name`, `base_template`, `fields jsonb`), con RLS que aísla los registros por usuario.
+-   `profiles.specialty_template` admite tanto una clave base (`general_soap`, etc.) como el `id` (UUID) de una plantilla personalizada.
+
+### 7.3. Resolución y esquema dinámico
+-   `resolveActiveSpecialty` (servidor) devuelve la definición activa: si la clave es base, usa el catálogo estático; si es un UUID, carga el registro del usuario y construye la definición con `buildCustomDefinition`.
+-   El **JSON Schema** para el `response_format` del LLM se genera desde los campos (`buildJsonSchemaFromFields`), y la **validación Zod** también se construye dinámicamente (`buildZodSchemaFromFields` / `validateCustomNote`). Las plantillas base siguen usando sus esquemas estáticos.
+-   `sanitizeCustomFields` sanea la estructura enviada por el cliente (tipos de campo, claves únicas y seguras para el esquema, anidación de grupos).
+
+### 7.4. API
+-   `GET/POST /api/specialties` y `PATCH/DELETE /api/specialties/[id]`, todas autenticadas y limitadas al usuario. No se permite eliminar la plantilla que está activa en el perfil.
+
+### 7.5. Privacidad
+-   Solo se persiste la definición de la plantilla (metadatos de estructura), nunca datos clínicos. El aislamiento es por usuario vía RLS, igual que el resto del sistema.

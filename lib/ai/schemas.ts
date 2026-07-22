@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { SpecialtyField } from "@/lib/ai/specialties";
 
 const soapSectionSchema = z.object({
 	subjective: z.array(z.string()),
@@ -158,6 +159,47 @@ export function validateAndSanitize(
 			.join("; ");
 		throw new Error(
 			`La respuesta del modelo no cumplió el esquema JSON esperado (${issues})`,
+		);
+	}
+	return parsed.data as Record<string, unknown>;
+}
+
+function fieldToZod(field: SpecialtyField): z.ZodTypeAny {
+	if (field.kind === "group") {
+		const children = field.children ?? [];
+		return z.object(
+			Object.fromEntries(children.map((child) => [child.key, fieldToZod(child)])),
+		);
+	}
+
+	if (field.kind === "list") {
+		return z.array(z.string());
+	}
+
+	return z.string();
+}
+
+export function buildZodSchemaFromFields(
+	fields: ReadonlyArray<SpecialtyField>,
+): z.ZodObject<Record<string, z.ZodTypeAny>> {
+	return z.object(
+		Object.fromEntries(fields.map((field) => [field.key, fieldToZod(field)])),
+	);
+}
+
+export function validateCustomNote(
+	fields: ReadonlyArray<SpecialtyField>,
+	data: Record<string, unknown>,
+): Record<string, unknown> {
+	const schema = buildZodSchemaFromFields(fields);
+	const sanitized = sanitizeRawResponse(data);
+	const parsed = schema.safeParse(sanitized);
+	if (!parsed.success) {
+		const issues = parsed.error.issues
+			.map((i) => `${i.path.join(".")}: ${i.message}`)
+			.join("; ");
+		throw new Error(
+			`La respuesta del modelo no cumplió la plantilla personalizada (${issues})`,
 		);
 	}
 	return parsed.data as Record<string, unknown>;

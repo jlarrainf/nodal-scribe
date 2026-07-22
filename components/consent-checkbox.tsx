@@ -12,15 +12,15 @@ export function ConsentCheckbox({
 	disabled,
 }: ConsentCheckboxProps) {
 	return (
-		<label className="flex items-start gap-3 rounded-3xl border border-black/10 bg-white/70 p-4 text-sm text-ink shadow-sm backdrop-blur">
+		<label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-black/8 bg-paper/30 px-3.5 py-3 transition hover:border-forest/30">
 			<input
 				type="checkbox"
 				checked={checked}
 				disabled={disabled}
 				onChange={(event) => onChange(event.target.checked)}
-				className="mt-1 h-4 w-4 rounded border-black/30 text-forest focus:ring-forest"
+				className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/30 accent-forest focus:ring-forest"
 			/>
-			<span>
+			<span className="text-[13px] leading-5 text-ink/80">
 				Confirmo que el paciente otorgó consentimiento verbal para la grabación
 				y el procesamiento de la consulta.
 			</span>

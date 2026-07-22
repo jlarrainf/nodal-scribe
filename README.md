@@ -7,6 +7,7 @@ Nodal Scribe es un PoC en Next.js para capturar una consulta por audio o texto, 
 - Graba audio desde el navegador con consentimiento explícito.
 - Transcribe el audio con el modelo ASR configurado en el backend.
 - Estructura la transcripción con OpenRouter usando JSON estricto.
+- Muestra notas en vivo en Markdown durante la grabación, enfocadas en lo que el médico defina en su perfil.
 - Permite pegar texto crudo en un modo de testing sin micrófono.
 - Protege el acceso con autenticación Supabase.
 - Guarda preferencias de perfil por usuario en `public.profiles`.
@@ -75,6 +76,18 @@ Sirve para:
 - validar cambios en el schema,
 - comparar el resultado del modelo con la expectativa visual del editor.
 
+## Notas en vivo
+
+Durante la grabación, la app extrae y muestra notas en Markdown con lo relevante de la consulta en curso, para que el médico pueda revisarlo sin esperar al final.
+
+- El audio se transcribe por el mismo pipeline ASR efímero que la nota final (sin Web Speech API del navegador).
+- El endpoint `POST /api/process-live-note` está autenticado y no almacena nada: el audio se procesa en memoria y se descarta.
+- Las notas viven solo en memoria del navegador y se limpian al detener la grabación.
+- El enfoque de las notas se configura en Ajustes (`live_note_focus`); si está vacío, se usa un enfoque clínico por defecto.
+- El Markdown se renderiza con un parser propio sin `dangerouslySetInnerHTML`.
+
+El diseño completo y el plan de endurecimiento para producción están en `ARCHITECTURE.md` (sección 6).
+
 ## Autenticación
 
 La app usa Supabase SSR.
@@ -94,23 +107,46 @@ La UI muestra una vista previa de la especialidad seleccionada para que sea más
 
 ## Base de datos requerida
 
-La app espera una tabla `public.profiles` en Supabase.
+La app espera dos tablas en Supabase: `public.profiles` y `public.custom_specialties`.
 
 ### Esquema esperado
 
+`public.profiles`:
+
 - `user_id` UUID, clave primaria y FK a `auth.users.id`
-- `specialty_template` texto, con valor por defecto `general_soap`
+- `specialty_template` texto, con valor por defecto `general_soap` (admite una clave base o el ID de una plantilla personalizada)
 - `custom_instructions` texto, con valor por defecto vacío
+- `live_note_focus` texto, con valor por defecto vacío
 - `created_at` timestamptz
 - `updated_at` timestamptz
 
+`public.custom_specialties` (plantillas personalizadas por usuario):
+
+- `id` UUID, clave primaria
+- `user_id` UUID, FK a `auth.users.id`
+- `name` texto
+- `base_template` texto (la plantilla base de la que partió)
+- `fields` jsonb (la estructura de campos editable)
+- `created_at` / `updated_at` timestamptz
+
 ### Migración
 
-Existe una migración lista para aplicar en:
+Existen migraciones listas para aplicar en:
 
 - `supabase/migrations/20260710_create_profiles.sql`
+- `supabase/migrations/20260722_add_live_note_focus.sql`
+- `supabase/migrations/20260722_create_custom_specialties.sql`
 
 Si ves el error de schema cache sobre `public.profiles`, normalmente significa que la tabla no fue creada o que Supabase no refrescó el esquema después de aplicar la migración.
+
+## Plantillas personalizadas
+
+Desde Ajustes puedes crear una plantilla propia a partir de cualquiera de las plantillas base:
+
+- Se copia la estructura de la plantilla seleccionada y puedes agregar, eliminar, renombrar y reordenar campos de tipo texto, lista o grupo.
+- La plantilla base original nunca se modifica: la personalizada es una copia independiente guardada en `public.custom_specialties`, aislada por usuario con RLS.
+- El modelo genera la nota según la estructura personalizada (el JSON Schema y la validación Zod se construyen dinámicamente desde los campos).
+- Al crearla queda seleccionada; guarda los ajustes para activarla en la próxima transcripción.
 
 ## Variables de entorno
 

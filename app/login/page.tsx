@@ -13,5 +13,5 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 			resolvedSearchParams?.redirectTo[0]
 		:	resolvedSearchParams?.redirectTo;
 
-	return <LoginForm redirectTo={redirectTo ?? "/"} />;
+	return <LoginForm redirectTo={redirectTo ?? "/app"} />;
 }

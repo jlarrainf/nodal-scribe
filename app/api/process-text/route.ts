@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processTranscriptWithOpenRouter } from "@/lib/ai/process-clinical-note";
-import { getAuthenticatedProfile } from "@/lib/supabase/profiles";
+import { processTranscriptWithSpecialty } from "@/lib/ai/process-clinical-note";
+import { createSupabaseRouteClient } from "@/lib/supabase/route";
+import {
+	getAuthenticatedProfile,
+	resolveActiveSpecialty,
+} from "@/lib/supabase/profiles";
 
 function jsonError(message: string, status = 400) {
 	return NextResponse.json({ error: message }, { status });
@@ -8,7 +12,14 @@ function jsonError(message: string, status = 400) {
 
 export async function POST(request: NextRequest) {
 	try {
-		const { profile } = await getAuthenticatedProfile(request);
+		const { userId, profile } = await getAuthenticatedProfile(request);
+		const supabase = createSupabaseRouteClient(request);
+		const specialty = await resolveActiveSpecialty(
+			supabase,
+			userId,
+			profile.specialty_template,
+		);
+
 		const body = (await request.json()) as { text?: string };
 		const text = body.text?.trim();
 
@@ -16,10 +27,11 @@ export async function POST(request: NextRequest) {
 			return jsonError("El texto de transcripción es obligatorio.");
 		}
 
-		const note = await processTranscriptWithOpenRouter(text, {
-			specialtyTemplate: profile.specialty_template,
-			customInstructions: profile.custom_instructions,
-		});
+		const note = await processTranscriptWithSpecialty(
+			text,
+			specialty,
+			profile.custom_instructions,
+		);
 		return NextResponse.json(note);
 	} catch (error) {
 		const message =

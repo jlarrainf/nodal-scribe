@@ -5,3 +5,11 @@ dist
 .env.local
 .DS_Store
 npm-debug.log*
+
+# Documentos clínicos — nunca versionar (privacidad de pacientes)
+historias/
+*.docx
+
+# InsForge / Vercel
+.insforge/
+.vercel

@@ -20,8 +20,132 @@ export type SpecialtyDefinition = {
 	description: string;
 	systemInstructions: string;
 	jsonSchema: JsonSchemaObject;
+	fields: ReadonlyArray<SpecialtyField>;
+	templateKey?: string;
+	id?: string;
+};
+
+export type SpecialtyStructure = {
+	label: string;
+	description: string;
+	fields: ReadonlyArray<SpecialtyField>;
+	templateKey?: string;
+	id?: string;
+};
+
+export type CustomSpecialtyRecord = {
+	id: string;
+	user_id: string;
+	name: string;
+	base_template: string;
 	fields: SpecialtyField[];
 };
+
+function fieldToJsonSchema(field: SpecialtyField): Record<string, unknown> {
+	if (field.kind === "group") {
+		const children = field.children ?? [];
+		return {
+			type: "object",
+			additionalProperties: false,
+			required: children.map((child) => child.key),
+			properties: Object.fromEntries(
+				children.map((child) => [child.key, fieldToJsonSchema(child)]),
+			),
+		};
+	}
+
+	if (field.kind === "list") {
+		return { type: "array", items: { type: "string" } };
+	}
+
+	return { type: "string" };
+}
+
+export function buildJsonSchemaFromFields(
+	fields: ReadonlyArray<SpecialtyField>,
+	name: string,
+): JsonSchemaObject {
+	return {
+		name,
+		strict: true,
+		schema: {
+			type: "object",
+			additionalProperties: false,
+			required: fields.map((field) => field.key),
+			properties: Object.fromEntries(
+				fields.map((field) => [field.key, fieldToJsonSchema(field)]),
+			),
+		},
+	};
+}
+
+export function buildCustomDefinition(
+	record: CustomSpecialtyRecord,
+): SpecialtyDefinition {
+	const base = getSpecialtyDefinition(record.base_template);
+	const schemaName = `custom_note_${record.id.replace(/-/g, "").slice(0, 12)}`;
+
+	return {
+		label: record.name,
+		description: `Plantilla personalizada a partir de ${base.label}.`,
+		systemInstructions: base.systemInstructions,
+		jsonSchema: buildJsonSchemaFromFields(record.fields, schemaName),
+		fields: record.fields,
+		id: record.id,
+	};
+}
+
+export function generateFieldKey(): string {
+	return `fld_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function sanitizeCustomFields(input: unknown): SpecialtyField[] {
+	if (!Array.isArray(input)) {
+		return [];
+	}
+
+	const result: SpecialtyField[] = [];
+	const seen = new Set<string>();
+
+	for (const item of input) {
+		if (!item || typeof item !== "object") {
+			continue;
+		}
+
+		const raw = item as Record<string, unknown>;
+		const kind = raw.kind;
+		if (kind !== "text" && kind !== "list" && kind !== "group") {
+			continue;
+		}
+
+		const label = typeof raw.label === "string" ? raw.label.trim() : "";
+		if (!label) {
+			continue;
+		}
+
+		const rawKey =
+			typeof raw.key === "string" && raw.key.trim() ? raw.key.trim() : generateFieldKey();
+		let key = rawKey.replace(/[^a-zA-Z0-9_-]/g, "_") || generateFieldKey();
+		while (seen.has(key)) {
+			key = `${key}_${Math.random().toString(36).slice(2, 5)}`;
+		}
+		seen.add(key);
+
+		const field: SpecialtyField = { key, label, kind };
+
+		if (typeof raw.placeholder === "string" && raw.placeholder.trim()) {
+			field.placeholder = raw.placeholder.trim();
+		}
+
+		if (kind === "group") {
+			field.children = sanitizeCustomFields(raw.children);
+		}
+
+		result.push(field);
+	}
+
+	return result;
+}
 
 const SOAP_SCHEMA: JsonSchemaObject = {
 	name: "clinical_note_soap",

@@ -7,7 +7,10 @@ export async function middleware(request: NextRequest) {
 	const response = await updateSession(request);
 
 	const pathname = request.nextUrl.pathname;
-	const isProtectedPath = pathname === "/" || pathname.startsWith("/settings");
+	const isProtectedPath =
+		pathname === "/app" ||
+		pathname.startsWith("/app/") ||
+		pathname.startsWith("/settings");
 	const isLoginPath = pathname === "/login";
 
 	if (!isProtectedPath && !isLoginPath) {
@@ -41,7 +44,7 @@ export async function middleware(request: NextRequest) {
 
 	if (user && isLoginPath) {
 		const url = request.nextUrl.clone();
-		url.pathname = "/";
+		url.pathname = "/app";
 		return NextResponse.redirect(url);
 	}
 
@@ -49,5 +52,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/", "/login", "/settings"],
+	matcher: ["/app/:path*", "/login", "/settings/:path*"],
 };
