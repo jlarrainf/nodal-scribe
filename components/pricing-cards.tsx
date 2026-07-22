@@ -188,22 +188,22 @@ export function PricingCards() {
 				))}
 			</div>
 
-			<div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-black/8 bg-gradient-to-r from-ink to-[#2b2b2b] p-6 sm:flex-row sm:items-center">
+			<div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-forest/25 bg-gradient-to-r from-forest/10 to-forest/[0.03] p-6 sm:flex-row sm:items-center">
 				<div>
-					<p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-paper/50">
+					<p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-forest">
 						Empresas y sector público
 					</p>
-					<h3 className="mt-1 text-lg font-semibold tracking-tight text-paper">
+					<h3 className="mt-1 text-lg font-semibold tracking-tight text-ink">
 						Hospitales, redes y Mercado Público
 					</h3>
-					<p className="mt-1 max-w-xl text-[13px] leading-5 text-paper/65">
+					<p className="mt-1 max-w-xl text-[13px] leading-5 text-ink/65">
 						SSO, SLA, despliegue con retención cero de datos (Azure BAA),
 						onboarding presencial y condiciones especiales de licenciamiento.
 					</p>
 				</div>
 				<Link
 					href="mailto:ventas@nodalscribe.cl"
-					className="shrink-0 rounded-full bg-paper px-5 py-3 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-lg"
+					className="shrink-0 rounded-full bg-forest px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(35,66,58,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-8px_rgba(35,66,58,0.6)]"
 				>
 					Conversemos
 				</Link>
