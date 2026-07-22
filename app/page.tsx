@@ -6,6 +6,7 @@ const NAV_LINKS = [
 	{ href: "#como-funciona", label: "Cómo funciona" },
 	{ href: "#especialidades", label: "Especialidades" },
 	{ href: "#seguridad", label: "Seguridad" },
+	{ href: "/pricing", label: "Precios" },
 ];
 
 const STEPS = [

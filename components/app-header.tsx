@@ -7,6 +7,11 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ showSettings = true }: AppHeaderProps) {
+	const handleSignOut = async () => {
+		await fetch("/api/auth/sign-out", { method: "POST" });
+		window.location.assign("/");
+	};
+
 	return (
 		<header className="sticky top-0 z-50 border-b border-black/6 bg-paper/85 backdrop-blur-md">
 			<div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -19,6 +24,7 @@ export function AppHeader({ showSettings = true }: AppHeaderProps) {
 					</span>
 				</Link>
 
+			<div className="flex items-center gap-2">
 				{showSettings && (
 					<Link
 						href="/settings"
@@ -41,6 +47,27 @@ export function AppHeader({ showSettings = true }: AppHeaderProps) {
 						Ajustes
 					</Link>
 				)}
+				<button
+					type="button"
+					onClick={handleSignOut}
+					className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium text-ink/55 transition hover:bg-red-50 hover:text-red-600"
+				>
+					<svg
+						className="h-3.5 w-3.5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						strokeWidth={2}
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+						/>
+					</svg>
+					Cerrar sesión
+				</button>
+			</div>
 			</div>
 		</header>
 	);
