@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { getSpecialtyOptions } from "@/lib/ai/specialties";
 import { getSpecialtyPreviewLines } from "@/lib/utils/clinical-note";
-
-const NAV_LINKS = [
-	{ href: "#como-funciona", label: "Cómo funciona" },
-	{ href: "#especialidades", label: "Especialidades" },
-	{ href: "#seguridad", label: "Seguridad" },
-	{ href: "/pricing", label: "Precios" },
-];
+import { SiteNav } from "@/components/site-nav";
 
 const STEPS = [
 	{
@@ -76,41 +70,6 @@ function Logo() {
 				Nodal Scribe
 			</span>
 		</Link>
-	);
-}
-
-function LandingNav() {
-	return (
-		<header className="sticky top-0 z-50 border-b border-black/5 bg-paper/80 backdrop-blur-md">
-			<div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-				<Logo />
-				<nav className="hidden items-center gap-7 md:flex">
-					{NAV_LINKS.map((link) => (
-						<a
-							key={link.href}
-							href={link.href}
-							className="text-sm font-medium text-ink/70 transition hover:text-ink"
-						>
-							{link.label}
-						</a>
-					))}
-				</nav>
-				<div className="flex items-center gap-3">
-					<Link
-						href="/login"
-						className="hidden rounded-full px-4 py-2 text-sm font-medium text-ink/80 transition hover:text-ink sm:inline-flex"
-					>
-						Iniciar sesión
-					</Link>
-					<Link
-						href="/app"
-						className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-paper shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-					>
-						Comenzar
-					</Link>
-				</div>
-			</div>
-		</header>
 	);
 }
 
@@ -211,7 +170,7 @@ export default function LandingPage() {
 
 	return (
 		<div className="flex min-h-screen flex-col">
-			<LandingNav />
+			<SiteNav />
 
 			<main className="flex-1">
 				<section className="relative overflow-hidden">
@@ -517,6 +476,11 @@ export default function LandingPage() {
 										<a href="#especialidades" className="transition hover:text-ink">
 											Especialidades
 										</a>
+									</li>
+									<li>
+										<Link href="/pricing" className="transition hover:text-ink">
+											Precios
+										</Link>
 									</li>
 									<li>
 										<Link href="/app" className="transition hover:text-ink">

@@ -203,7 +203,7 @@ export function PricingCards() {
 				</div>
 				<Link
 					href="mailto:ventas@nodalscribe.cl"
-					className="shrink-0 rounded-full bg-forest px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(35,66,58,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-8px_rgba(35,66,58,0.6)]"
+					className="w-full shrink-0 rounded-full bg-forest px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(35,66,58,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-8px_rgba(35,66,58,0.6)] sm:w-auto"
 				>
 					Conversemos
 				</Link>

@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { PricingCards } from "@/components/pricing-cards";
+import { SiteNav, type NavLink } from "@/components/site-nav";
+
+const PRICING_NAV_LINKS: NavLink[] = [
+	{ href: "/", label: "Inicio" },
+	{ href: "/#como-funciona", label: "Cómo funciona" },
+	{ href: "/#especialidades", label: "Especialidades" },
+	{ href: "/#seguridad", label: "Seguridad" },
+];
 
 const FAQ = [
 	{
@@ -38,32 +46,7 @@ export const metadata = {
 export default function PricingPage() {
 	return (
 		<div className="flex min-h-screen flex-col">
-			<header className="sticky top-0 z-50 border-b border-black/6 bg-paper/85 backdrop-blur-md">
-				<div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-					<Link href="/" className="group flex items-center gap-2.5">
-						<span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-forest to-[#16281f] font-mono text-xs font-bold text-white shadow-sm transition group-hover:scale-105">
-							NS
-						</span>
-						<span className="text-[15px] font-semibold tracking-tight text-ink">
-							Nodal Scribe
-						</span>
-					</Link>
-					<div className="flex items-center gap-3">
-						<Link
-							href="/"
-							className="hidden rounded-full px-3.5 py-2 text-[13px] font-medium text-ink/70 transition hover:text-ink sm:inline-flex"
-						>
-							Volver al inicio
-						</Link>
-						<Link
-							href="/login"
-							className="rounded-full bg-ink px-4 py-2 text-[13px] font-semibold text-paper shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-						>
-							Iniciar sesión
-						</Link>
-					</div>
-				</div>
-			</header>
+			<SiteNav links={PRICING_NAV_LINKS} />
 
 			<main className="mx-auto w-full max-w-6xl flex-1 px-4 py-14 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-2xl text-center">
