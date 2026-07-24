@@ -461,7 +461,7 @@ export default function LandingPage() {
 								EHR. Prueba de concepto.
 							</p>
 						</div>
-						<div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+						<div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
 							<div>
 								<p className="font-mono text-xs font-semibold uppercase tracking-[0.15em] text-ink/45">
 									Producto
@@ -520,6 +520,29 @@ export default function LandingPage() {
 									<li>
 										<Link href="/settings" className="transition hover:text-ink">
 											Ajustes
+										</Link>
+									</li>
+								</ul>
+							</div>
+							<div>
+								<p className="font-mono text-xs font-semibold uppercase tracking-[0.15em] text-ink/45">
+									Legal
+								</p>
+								<ul className="mt-3 space-y-2 text-sm text-ink/70">
+									<li>
+										<Link
+											href="/terminos-y-condiciones"
+											className="transition hover:text-ink"
+										>
+											Términos y Condiciones
+										</Link>
+									</li>
+									<li>
+										<Link
+											href="/politica-de-privacidad"
+											className="transition hover:text-ink"
+										>
+											Política de Privacidad
 										</Link>
 									</li>
 								</ul>

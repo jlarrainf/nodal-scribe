@@ -182,6 +182,27 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
 						Ningún dato clínico se almacena ni se transmite a terceros durante
 						el proceso de autenticación.
 					</p>
+					<p className="mt-2 text-xs leading-5 text-ink/50">
+						Al continuar, aceptas nuestros{" "}
+						<a
+							href="/terminos-y-condiciones"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="font-medium text-forest underline-offset-4 hover:underline"
+						>
+							Términos y Condiciones
+						</a>{" "}
+						y la{" "}
+						<a
+							href="/politica-de-privacidad"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="font-medium text-forest underline-offset-4 hover:underline"
+						>
+							Política de Privacidad
+						</a>
+						.
+					</p>
 				</div>
 			</section>
 		</main>
